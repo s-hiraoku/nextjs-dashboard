@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { signIn } from '@/auth';
 
 export type State = {
   errors?: {
@@ -25,6 +26,17 @@ const FormSchema = z.object({
   status: z.enum(['pending', 'paid'], { invalid_type_error: 'Please select an invoice status.' }),
   date: z.string(),
 });
+
+export async function authenticate(prevState: string | undefined, formData: FormData) {
+  try {
+    await signIn('credentials', Object.fromEntries(formData));
+  } catch (error) {
+    if ((error as Error).message.includes('CredentialsSignin')) {
+      return 'CredentialsSignin';
+    }
+    throw error;
+  }
+}
 
 const CreateInvoice = FormSchema.omit({ id: true, date: true });
 
